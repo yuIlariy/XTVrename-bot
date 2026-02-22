@@ -13,6 +13,8 @@ import shutil
 
 async def process_file(client, message, data):
     user_id = message.chat.id
+    # Use message ID to make the filename unique for concurrent processing (e.g. albums)
+    message_id = message.id
 
     # 0. Check for FFmpeg first
     if not shutil.which("ffmpeg"):
@@ -37,7 +39,8 @@ async def process_file(client, message, data):
     )
 
     start_time = time.time()
-    file_path = os.path.join(Config.DOWNLOAD_DIR, f"{user_id}_input.mkv")
+    # Unique input filename
+    file_path = os.path.join(Config.DOWNLOAD_DIR, f"{user_id}_{message_id}_input.mkv")
 
     try:
         downloaded_path = await client.download_media(
@@ -85,7 +88,9 @@ async def process_file(client, message, data):
         templates = Config.DEFAULT_TEMPLATES
         thumb_binary = None
 
-    thumb_path = os.path.join(Config.DOWNLOAD_DIR, f"{user_id}_thumb.jpg")
+    # Unique thumbnail path
+    thumb_path = os.path.join(Config.DOWNLOAD_DIR, f"{user_id}_{message_id}_thumb.jpg")
+
     if thumb_binary:
         with open(thumb_path, "wb") as f:
             f.write(thumb_binary)
@@ -126,7 +131,17 @@ async def process_file(client, message, data):
         "default_language": "English"
     }
 
+    # Use message ID in output filename temporarily to avoid collision if needed,
+    # but usually output filename is unique by title/season/episode.
+    # However, if we process multiple resolutions of same file, it might conflict.
+    # For now, we trust the final filename is unique enough or we overwrite.
+    # To be safe, let's just use the intended final filename.
     output_path = os.path.join(Config.DOWNLOAD_DIR, final_filename)
+
+    # Check if output file already exists (race condition check)
+    if os.path.exists(output_path):
+         # If file exists, append a timestamp or ID to make it unique temporarily
+         output_path = os.path.join(Config.DOWNLOAD_DIR, f"{int(time.time())}_{final_filename}")
 
     cmd, err = await generate_ffmpeg_command(
         input_path=file_path,
@@ -137,12 +152,19 @@ async def process_file(client, message, data):
 
     if not cmd:
         await status_msg.edit_text(f"❌ **FFmpeg Error**\n\n`{err}`")
+        # Cleanup input
+        if os.path.exists(file_path): os.remove(file_path)
+        if os.path.exists(thumb_path): os.remove(thumb_path)
         return
 
     success, stderr = await execute_ffmpeg(cmd)
     if not success:
         print(stderr.decode())
         await status_msg.edit_text("❌ **Encoding Failed**\n\nSomething went wrong during processing.")
+        # Cleanup
+        if os.path.exists(file_path): os.remove(file_path)
+        if os.path.exists(thumb_path): os.remove(thumb_path)
+        if os.path.exists(output_path): os.remove(output_path)
         return
 
     # 3. Upload
