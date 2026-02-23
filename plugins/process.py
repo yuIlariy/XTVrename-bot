@@ -15,7 +15,7 @@ from config import Config
 from database import db
 from utils.ffmpeg_tools import generate_ffmpeg_command, execute_ffmpeg
 from utils.progress import progress_for_pyrogram
-from utils.xtv_core import XTVEngine
+from utils.XTVcore import XTVEngine
 
 # Configure structured logger
 logger = logging.getLogger("TaskProcessor")
