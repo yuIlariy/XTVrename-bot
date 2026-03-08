@@ -22,6 +22,9 @@ batch_sessions = {}
 # Store for batch processing tasks
 batch_tasks = {}
 
+# Store for temporary "Sorting Files..." messages
+batch_status_msgs = {}
+
 @Client.on_callback_query(filters.regex(r"^start_renaming$"))
 async def handle_start_renaming(client, callback_query):
     user_id = callback_query.from_user.id
@@ -484,6 +487,15 @@ async def process_batch(client, user_id):
     if not batch:
         return
 
+    # Delete the temporary status message if it exists
+    if user_id in batch_status_msgs:
+        try:
+            await batch_status_msgs[user_id].delete()
+        except Exception:
+            pass
+        finally:
+            del batch_status_msgs[user_id]
+
     # Sort the batch based on the type of flow
     # Each item in the batch is a dict: {'message': Message, 'data': dict}
     # For auto-detect, the dict contains all detected properties
@@ -566,6 +578,8 @@ async def handle_file_upload(client, message):
     # Add to batch queue
     if user_id not in batch_sessions:
         batch_sessions[user_id] = []
+        msg = await message.reply_text("⏳ **Sorting Files...**\nPlease wait a moment.", quote=True)
+        batch_status_msgs[user_id] = msg
 
     # Start or reset the batch processing timer
     if user_id in batch_tasks:
@@ -633,6 +647,8 @@ async def handle_auto_detection(client, message):
     # Add to batch queue
     if user_id not in batch_sessions:
         batch_sessions[user_id] = []
+        msg = await message.reply_text("⏳ **Sorting Files...**\nPlease wait a moment.", quote=True)
+        batch_status_msgs[user_id] = msg
 
     # Start or reset the batch processing timer
     if user_id in batch_tasks:
