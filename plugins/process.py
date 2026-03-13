@@ -471,23 +471,71 @@ class TaskProcessor:
         if self.media_type == "watermark":
             wtype = self.data.get("watermark_type")
             wcontent = self.data.get("watermark_content")
+            pos = self.data.get("watermark_position", "bottomright")
+            size = self.data.get("watermark_size", "medium")
 
             cmd = ["ffmpeg", "-y", "-i", self.input_path]
 
             if wtype == "text":
-                # Ensure the text is escaped for ffmpeg
                 escaped_text = wcontent.replace("'", "\\'").replace(":", "\\:")
-                # Draw text centered, simple styling
-                cmd.extend(["-vf", f"drawtext=text='{escaped_text}':fontcolor=white@0.8:fontsize=h/10:x=(w-text_w)/2:y=(h-text_h)/2:box=1:boxcolor=black@0.5:boxborderw=5"])
+
+                # Sizing logic for text (fontsize based on video height 'h')
+                if size == "small":
+                    fontsize = "h/20"
+                elif size == "large":
+                    fontsize = "h/5"
+                elif size in ["10", "20", "30"]: # percentage
+                    # For text, scaling by width percentage is tricky, fallback to approx height scale
+                    factor = int(size) / 100
+                    fontsize = f"h*{factor}"
+                else: # medium
+                    fontsize = "h/10"
+
+                # Positioning logic for text
+                if pos == "topleft":
+                    x, y = "10", "10"
+                elif pos == "topright":
+                    x, y = "w-text_w-10", "10"
+                elif pos == "bottomleft":
+                    x, y = "10", "h-text_h-10"
+                elif pos == "center":
+                    x, y = "(w-text_w)/2", "(h-text_h)/2"
+                else: # bottomright
+                    x, y = "w-text_w-10", "h-text_h-10"
+
+                cmd.extend(["-vf", f"drawtext=text='{escaped_text}':fontcolor=white@0.8:fontsize={fontsize}:x={x}:y={y}:box=1:boxcolor=black@0.5:boxborderw=5"])
+
             else:
                 # Image watermark
                 watermark_path = os.path.join(self.download_dir, f"{self.user_id}_wm_overlay.png")
-                # We need to download it first
                 if wcontent:
                     await self.active_client.download_media(wcontent, file_name=watermark_path)
 
                 if os.path.exists(watermark_path):
-                    cmd.extend(["-i", watermark_path, "-filter_complex", "overlay=W-w-10:H-h-10"]) # Bottom right overlay
+                    # Sizing logic for image overlay (relative to main video width)
+                    if size == "small":
+                        scale_expr = "w='main_w*0.1':h='ow/a'"
+                    elif size == "large":
+                        scale_expr = "w='main_w*0.4':h='ow/a'"
+                    elif size in ["10", "20", "30"]:
+                        scale_expr = f"w='main_w*{int(size)/100}':h='ow/a'"
+                    else: # medium
+                        scale_expr = "w='main_w*0.2':h='ow/a'"
+
+                    # Positioning logic for image overlay
+                    if pos == "topleft":
+                        overlay_expr = "10:10"
+                    elif pos == "topright":
+                        overlay_expr = "W-w-10:10"
+                    elif pos == "bottomleft":
+                        overlay_expr = "10:H-h-10"
+                    elif pos == "center":
+                        overlay_expr = "(W-w)/2:(H-h)/2"
+                    else: # bottomright
+                        overlay_expr = "W-w-10:H-h-10"
+
+                    # Apply scale2ref (so watermark width is a percentage of main video width) and overlay
+                    cmd.extend(["-i", watermark_path, "-filter_complex", f"[1:v][0:v]scale2ref={scale_expr}[wm][vid];[vid][wm]overlay={overlay_expr}"])
                 else:
                     logger.error("Watermark overlay image missing.")
 

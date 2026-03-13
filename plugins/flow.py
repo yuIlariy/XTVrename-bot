@@ -307,29 +307,19 @@ async def handle_text_input(client, message):
         user_id = message.from_user.id
         text = message.text.strip()
         update_data(user_id, "watermark_content", text)
+        set_state(user_id, "awaiting_watermark_position")
 
-        # Trigger processing
-        session_data = get_data(user_id)
-        data = {
-            "type": "watermark",
-            "watermark_type": "text",
-            "watermark_content": text,
-            "original_name": session_data.get("original_name"),
-            "file_message_id": session_data.get("file_message_id"),
-            "file_chat_id": session_data.get("file_chat_id"),
-            "is_auto": False
-        }
-
-        try:
-            msg = await client.get_messages(session_data.get("file_chat_id"), session_data.get("file_message_id"))
-            data["file_message"] = msg
-            reply_msg = await message.reply_text("Processing watermark...", quote=True)
-            from plugins.process import process_file
-            asyncio.create_task(process_file(client, reply_msg, data))
-        except Exception as e:
-            logger.error(f"Failed to get message for watermark mode: {e}")
-            await message.reply_text(f"Error: {e}")
-        clear_session(user_id)
+        await message.reply_text(
+            "📍 **Select Watermark Position**\n\nWhere should the watermark be placed?",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("Top-Left", callback_data="wm_pos_topleft"),
+                 InlineKeyboardButton("Top-Right", callback_data="wm_pos_topright")],
+                [InlineKeyboardButton("Bottom-Left", callback_data="wm_pos_bottomleft"),
+                 InlineKeyboardButton("Bottom-Right", callback_data="wm_pos_bottomright")],
+                [InlineKeyboardButton("Center", callback_data="wm_pos_center")],
+                [InlineKeyboardButton("❌ Cancel", callback_data="cancel_rename")]
+            ])
+        )
         return
 
     elif state == "awaiting_language_custom":
@@ -790,28 +780,19 @@ async def handle_file_upload(client, message):
 
         file_id = message.photo.file_id if getattr(message, "photo", None) else message.document.file_id
         update_data(user_id, "watermark_content", file_id)
+        set_state(user_id, "awaiting_watermark_position")
 
-        session_data = get_data(user_id)
-        data = {
-            "type": "watermark",
-            "watermark_type": "image",
-            "watermark_content": file_id,
-            "original_name": session_data.get("original_name"),
-            "file_message_id": session_data.get("file_message_id"),
-            "file_chat_id": session_data.get("file_chat_id"),
-            "is_auto": False
-        }
-
-        try:
-            msg = await client.get_messages(session_data.get("file_chat_id"), session_data.get("file_message_id"))
-            data["file_message"] = msg
-            reply_msg = await message.reply_text("Processing watermark...", quote=True)
-            from plugins.process import process_file
-            asyncio.create_task(process_file(client, reply_msg, data))
-        except Exception as e:
-            logger.error(f"Failed to get message for watermark mode: {e}")
-            await message.reply_text(f"Error: {e}")
-        clear_session(user_id)
+        await message.reply_text(
+            "📍 **Select Watermark Position**\n\nWhere should the watermark be placed?",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("Top-Left", callback_data="wm_pos_topleft"),
+                 InlineKeyboardButton("Top-Right", callback_data="wm_pos_topright")],
+                [InlineKeyboardButton("Bottom-Left", callback_data="wm_pos_bottomleft"),
+                 InlineKeyboardButton("Bottom-Right", callback_data="wm_pos_bottomright")],
+                [InlineKeyboardButton("Center", callback_data="wm_pos_center")],
+                [InlineKeyboardButton("❌ Cancel", callback_data="cancel_rename")]
+            ])
+        )
         return
 
     if state == "awaiting_audio_file":
@@ -910,6 +891,9 @@ async def handle_file_upload(client, message):
     if state != "awaiting_file_upload":
         if state is None:
             await handle_auto_detection(client, message)
+        elif state == "awaiting_convert_file":
+            # Handled earlier, but placed here as a fallback guard
+            pass
         return
 
     # Existing manual flow processing
@@ -1435,6 +1419,60 @@ async def handle_watermark_type(client, callback_query):
         msg,
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="cancel_rename")]])
     )
+
+
+@Client.on_callback_query(filters.regex(r"^wm_pos_(.*)$"))
+async def handle_watermark_position(client, callback_query):
+    user_id = callback_query.from_user.id
+    pos = callback_query.data.split("_")[2]
+    update_data(user_id, "watermark_position", pos)
+
+    set_state(user_id, "awaiting_watermark_size")
+    await callback_query.message.edit_text(
+        "📏 **Select Watermark Size**\n\nHow large should the watermark be?",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Small", callback_data="wm_size_small"),
+             InlineKeyboardButton("Medium", callback_data="wm_size_medium"),
+             InlineKeyboardButton("Large", callback_data="wm_size_large")],
+            [InlineKeyboardButton("10% width", callback_data="wm_size_10"),
+             InlineKeyboardButton("20% width", callback_data="wm_size_20")],
+            [InlineKeyboardButton("30% width", callback_data="wm_size_30")],
+            [InlineKeyboardButton("❌ Cancel", callback_data="cancel_rename")]
+        ])
+    )
+
+
+@Client.on_callback_query(filters.regex(r"^wm_size_(.*)$"))
+async def handle_watermark_size(client, callback_query):
+    user_id = callback_query.from_user.id
+    size = callback_query.data.split("_")[2]
+    update_data(user_id, "watermark_size", size)
+
+    session_data = get_data(user_id)
+    data = {
+        "type": "watermark",
+        "watermark_type": session_data.get("watermark_type"),
+        "watermark_content": session_data.get("watermark_content"),
+        "watermark_position": session_data.get("watermark_position"),
+        "watermark_size": session_data.get("watermark_size"),
+        "original_name": session_data.get("original_name"),
+        "file_message_id": session_data.get("file_message_id"),
+        "file_chat_id": session_data.get("file_chat_id"),
+        "is_auto": False
+    }
+
+    try:
+        msg = await client.get_messages(session_data.get("file_chat_id"), session_data.get("file_message_id"))
+        data["file_message"] = msg
+        await callback_query.message.delete()
+        reply_msg = await client.send_message(user_id, "Processing watermark...")
+        from plugins.process import process_file
+        asyncio.create_task(process_file(client, reply_msg, data))
+    except Exception as e:
+        logger.error(f"Failed to get message for watermark mode: {e}")
+        await client.send_message(user_id, f"Error: {e}")
+
+    clear_session(user_id)
 
 
 # New Handlers for Auto-Detect Menu
