@@ -7,13 +7,16 @@ from utils.log import get_logger
 
 logger = get_logger("utils.auth")
 
+
 def is_authorized(user_id):
     if Config.PUBLIC_MODE:
         return True
     return user_id == Config.CEO_ID or user_id in Config.ADMIN_IDS
 
+
 def is_admin(user_id):
     return user_id == Config.CEO_ID
+
 
 async def check_force_sub(client, user_id):
     """Check if the user is subscribed to the Force-Sub Channel in Public Mode."""
@@ -35,14 +38,24 @@ async def check_force_sub(client, user_id):
     except UserNotParticipant:
         return False
     except Exception as e:
-        logger.error(f"Error checking force sub for {user_id} in {force_sub_channel}: {e}")
-        # If the bot is not admin in the channel, it might throw an error.
-        # We assume they are not subscribed or we can't verify.
+        logger.error(
+            f"Error checking force sub for {user_id} in {force_sub_channel}: {e}"
+        )
         return False
 
-# Simply use `message` (which is the update object)
-# Pyrogram filters pass (filter, client, update)
-# `update` is Message or CallbackQuery
-# Both have `.from_user`
-auth_filter = filters.create(lambda _, __, update: is_authorized(update.from_user.id if update.from_user else 0))
-admin_filter = filters.create(lambda _, __, update: is_admin(update.from_user.id if update.from_user else 0))
+
+auth_filter = filters.create(
+    lambda _, __, update: is_authorized(update.from_user.id if update.from_user else 0)
+)
+admin_filter = filters.create(
+    lambda _, __, update: is_admin(update.from_user.id if update.from_user else 0)
+)
+
+# --------------------------------------------------------------------------
+# Developed by 𝕏0L0™ (@davdxpx) | © 2026 XTV Network Global
+# Don't Remove Credit
+# Telegram Channel @XTVbots
+# Developed for the 𝕏TV Network @XTVglobal
+# Backup Channel @XTVhome
+# Contact on Telegram @davdxpx
+# --------------------------------------------------------------------------
