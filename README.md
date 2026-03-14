@@ -87,7 +87,7 @@ To bypass Telegram's standard 2GB bot upload limit, the **𝕏TV Rename Bot** fe
 
 **How to Setup:**
 1. Send `/admin` to your bot.
-2. Click the **"🚀 Manage 𝕏TV Pro™"** button.
+2. Click the **"🚀 Setup 𝕏TV Pro™"** button.
 3. Follow the completely interactive, fast, and fail-safe setup guide. You will be asked to provide your **API ID**, **API Hash**, and **Phone Number**.
 4. The bot will request a login code from Telegram. *(Enter the code with spaces, e.g., `1 2 3 4 5`, to avoid Telegram's security triggers).*
 5. If 2FA is enabled, enter your password.
