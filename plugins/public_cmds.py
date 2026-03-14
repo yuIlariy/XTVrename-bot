@@ -9,8 +9,10 @@ logger = get_logger("plugins.public_cmds")
 
 user_sessions = {}
 
+
 def is_public_mode():
     return Config.PUBLIC_MODE
+
 
 @Client.on_message(filters.command("info") & filters.private)
 async def info_command(client, message):
@@ -22,9 +24,16 @@ async def info_command(client, message):
     community_name = config.get("community_name", "Our Community")
     support_contact = config.get("support_contact", "@davdxpx")
 
-    # Check if force sub is a username link
     force_sub_channel = config.get("force_sub_channel")
-    channel_link = force_sub_channel if (force_sub_channel and isinstance(force_sub_channel, str) and force_sub_channel.startswith("http")) else None
+    channel_link = (
+        force_sub_channel
+        if (
+            force_sub_channel
+            and isinstance(force_sub_channel, str)
+            and force_sub_channel.startswith("http")
+        )
+        else None
+    )
 
     if not channel_link and force_sub_channel:
         try:
@@ -57,6 +66,7 @@ async def info_command(client, message):
 
     await message.reply_text(text, disable_web_page_preview=True)
 
+
 @Client.on_message(filters.command("settings") & filters.private)
 async def settings_panel(client, message):
     if not is_public_mode():
@@ -68,18 +78,54 @@ async def settings_panel(client, message):
         "🛠 **Personal Settings Panel** 🛠\n\n"
         "Welcome to your personal settings.\n"
         "Here you can customize templates and thumbnails for your own files.",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🖼 Manage Thumbnail", callback_data="user_thumb_menu")],
-            [InlineKeyboardButton("📝 Edit Metadata Templates", callback_data="user_templates")],
-            [InlineKeyboardButton("📝 Edit Filename Templates", callback_data="user_filename_templates")],
-            [InlineKeyboardButton("📝 Edit Caption Template", callback_data="user_caption")],
-            [InlineKeyboardButton("📺 Dumb Channels", callback_data="user_dumb_channels")],
-            [InlineKeyboardButton("⚙️ General Settings", callback_data="user_general_settings")],
-            [InlineKeyboardButton("👀 View Current Settings", callback_data="user_view")]
-        ])
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "🖼 Manage Thumbnail", callback_data="user_thumb_menu"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "📝 Edit Metadata Templates", callback_data="user_templates"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "📝 Edit Filename Templates",
+                        callback_data="user_filename_templates",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "📝 Edit Caption Template", callback_data="user_caption"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "📺 Dumb Channels", callback_data="user_dumb_channels"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "⚙️ General Settings", callback_data="user_general_settings"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "👀 View Current Settings", callback_data="user_view"
+                    )
+                ],
+            ]
+        ),
     )
 
-@Client.on_callback_query(filters.regex(r"^(user_|edit_user_template_|edit_user_fn_template_|prompt_user_.*|dumb_user_)"))
+
+@Client.on_callback_query(
+    filters.regex(
+        r"^(user_|edit_user_template_|edit_user_fn_template_|prompt_user_.*|dumb_user_)"
+    )
+)
 async def user_settings_callback(client, callback_query):
     if not is_public_mode():
         raise ContinuePropagation
@@ -88,7 +134,6 @@ async def user_settings_callback(client, callback_query):
     data = callback_query.data
     logger.info(f"User settings callback: {data} from user {user_id}")
 
-    # Handle Dumb Channel Callbacks for public mode
     if data.startswith("dumb_user_"):
         if data == "dumb_user_menu":
             channels = await db.get_dumb_channels(user_id)
@@ -105,12 +150,27 @@ async def user_settings_callback(client, callback_query):
 
             await callback_query.message.edit_text(
                 text,
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("➕ Add New Dumb Channel", callback_data="dumb_user_add")],
-                    [InlineKeyboardButton("➖ Remove Dumb Channel", callback_data="dumb_user_remove")],
-                    [InlineKeyboardButton("⭐ Set Default", callback_data="dumb_user_set_default")],
-                    [InlineKeyboardButton("🔙 Back", callback_data="user_main")]
-                ])
+                reply_markup=InlineKeyboardMarkup(
+                    [
+                        [
+                            InlineKeyboardButton(
+                                "➕ Add New Dumb Channel", callback_data="dumb_user_add"
+                            )
+                        ],
+                        [
+                            InlineKeyboardButton(
+                                "➖ Remove Dumb Channel",
+                                callback_data="dumb_user_remove",
+                            )
+                        ],
+                        [
+                            InlineKeyboardButton(
+                                "⭐ Set Default", callback_data="dumb_user_set_default"
+                            )
+                        ],
+                        [InlineKeyboardButton("🔙 Back", callback_data="user_main")],
+                    ]
+                ),
             )
             return
         elif data == "dumb_user_add":
@@ -120,7 +180,15 @@ async def user_settings_callback(client, callback_query):
                 "Please add me as an Administrator in the desired channel.\n"
                 "Then, forward any message from that channel to me, OR send the Channel ID (e.g. `-100...`) or Public Username.\n\n"
                 "*(Send `disable` to cancel)*",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="dumb_user_menu")]])
+                reply_markup=InlineKeyboardMarkup(
+                    [
+                        [
+                            InlineKeyboardButton(
+                                "❌ Cancel", callback_data="dumb_user_menu"
+                            )
+                        ]
+                    ]
+                ),
             )
             return
         elif data == "dumb_user_remove":
@@ -130,9 +198,20 @@ async def user_settings_callback(client, callback_query):
                 return
             buttons = []
             for ch_id, ch_name in channels.items():
-                buttons.append([InlineKeyboardButton(f"❌ {ch_name}", callback_data=f"dumb_user_del_{ch_id}")])
-            buttons.append([InlineKeyboardButton("🔙 Back", callback_data="dumb_user_menu")])
-            await callback_query.message.edit_text("Select a channel to remove:", reply_markup=InlineKeyboardMarkup(buttons))
+                buttons.append(
+                    [
+                        InlineKeyboardButton(
+                            f"❌ {ch_name}", callback_data=f"dumb_user_del_{ch_id}"
+                        )
+                    ]
+                )
+            buttons.append(
+                [InlineKeyboardButton("🔙 Back", callback_data="dumb_user_menu")]
+            )
+            await callback_query.message.edit_text(
+                "Select a channel to remove:",
+                reply_markup=InlineKeyboardMarkup(buttons),
+            )
             return
         elif data.startswith("dumb_user_del_"):
             ch_id = data.replace("dumb_user_del_", "")
@@ -148,9 +227,20 @@ async def user_settings_callback(client, callback_query):
                 return
             buttons = []
             for ch_id, ch_name in channels.items():
-                buttons.append([InlineKeyboardButton(f"⭐ {ch_name}", callback_data=f"dumb_user_def_{ch_id}")])
-            buttons.append([InlineKeyboardButton("🔙 Back", callback_data="dumb_user_menu")])
-            await callback_query.message.edit_text("Select default auto-detect channel:", reply_markup=InlineKeyboardMarkup(buttons))
+                buttons.append(
+                    [
+                        InlineKeyboardButton(
+                            f"⭐ {ch_name}", callback_data=f"dumb_user_def_{ch_id}"
+                        )
+                    ]
+                )
+            buttons.append(
+                [InlineKeyboardButton("🔙 Back", callback_data="dumb_user_menu")]
+            )
+            await callback_query.message.edit_text(
+                "Select default auto-detect channel:",
+                reply_markup=InlineKeyboardMarkup(buttons),
+            )
             return
         elif data.startswith("dumb_user_def_"):
             ch_id = data.replace("dumb_user_def_", "")
@@ -167,14 +257,27 @@ async def user_settings_callback(client, callback_query):
 
     if data == "user_thumb_menu":
         await callback_query.message.edit_text(
-            "🖼 **Manage Thumbnail**\n\n"
-            "Select an action:",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("👀 View Current", callback_data="user_thumb_view")],
-                [InlineKeyboardButton("📤 Set Thumbnail", callback_data="user_thumb_set")],
-                [InlineKeyboardButton("🗑 Remove Thumbnail", callback_data="user_thumb_remove")],
-                [InlineKeyboardButton("🔙 Back", callback_data="user_main")]
-            ])
+            "🖼 **Manage Thumbnail**\n\n" "Select an action:",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "👀 View Current", callback_data="user_thumb_view"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "📤 Set Thumbnail", callback_data="user_thumb_set"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "🗑 Remove Thumbnail", callback_data="user_thumb_remove"
+                        )
+                    ],
+                    [InlineKeyboardButton("🔙 Back", callback_data="user_main")],
+                ]
+            ),
         )
     elif data == "user_thumb_view":
         thumb_bin, _ = await db.get_thumbnail(user_id)
@@ -182,16 +285,36 @@ async def user_settings_callback(client, callback_query):
             try:
                 f = io.BytesIO(thumb_bin)
                 f.name = "thumbnail.jpg"
-                await client.send_photo(user_id, f, caption="**Your Current Default Thumbnail**")
+                await client.send_photo(
+                    user_id, f, caption="**Your Current Default Thumbnail**"
+                )
                 await callback_query.message.edit_text(
-                    "🖼 **Manage Thumbnail**\n\n"
-                    "Thumbnail sent above.",
-                    reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("👀 View Current", callback_data="user_thumb_view")],
-                        [InlineKeyboardButton("📤 Set Thumbnail", callback_data="user_thumb_set")],
-                        [InlineKeyboardButton("🗑 Remove Thumbnail", callback_data="user_thumb_remove")],
-                        [InlineKeyboardButton("🔙 Back", callback_data="user_main")]
-                    ])
+                    "🖼 **Manage Thumbnail**\n\n" "Thumbnail sent above.",
+                    reply_markup=InlineKeyboardMarkup(
+                        [
+                            [
+                                InlineKeyboardButton(
+                                    "👀 View Current", callback_data="user_thumb_view"
+                                )
+                            ],
+                            [
+                                InlineKeyboardButton(
+                                    "📤 Set Thumbnail", callback_data="user_thumb_set"
+                                )
+                            ],
+                            [
+                                InlineKeyboardButton(
+                                    "🗑 Remove Thumbnail",
+                                    callback_data="user_thumb_remove",
+                                )
+                            ],
+                            [
+                                InlineKeyboardButton(
+                                    "🔙 Back", callback_data="user_main"
+                                )
+                            ],
+                        ]
+                    ),
                 )
             except Exception as e:
                 logger.error(f"Failed to send thumbnail: {e}")
@@ -203,36 +326,65 @@ async def user_settings_callback(client, callback_query):
             "📤 **Set Default Thumbnail**\n\n"
             "Click below to upload a new personal thumbnail. "
             "This will be embedded into your processed videos.",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("📤 Upload New", callback_data="prompt_user_thumb_set")],
-                [InlineKeyboardButton("🔙 Back", callback_data="user_thumb_menu")]
-            ])
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "📤 Upload New", callback_data="prompt_user_thumb_set"
+                        )
+                    ],
+                    [InlineKeyboardButton("🔙 Back", callback_data="user_thumb_menu")],
+                ]
+            ),
         )
     elif data == "prompt_user_thumb_set":
         user_sessions[user_id] = "awaiting_user_thumb"
         await callback_query.message.edit_text(
             "🖼 **Send the new photo** to set as your personal thumbnail:",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="user_thumb_menu")]])
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("❌ Cancel", callback_data="user_thumb_menu")]]
+            ),
         )
     elif data == "user_thumb_remove":
         await db.update_thumbnail(None, None, user_id)
         await callback_query.message.edit_text(
             "✅ **Thumbnail Removed**\n\nYour files will no longer use a default custom thumbnail.",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Menu", callback_data="user_main")]])
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("🔙 Back to Menu", callback_data="user_main")]]
+            ),
         )
     elif data == "user_templates":
         await callback_query.message.edit_text(
-            "📝 **Edit Metadata Templates**\n\n"
-            "Select a field to edit:",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Title", callback_data="edit_user_template_title"),
-                 InlineKeyboardButton("Author", callback_data="edit_user_template_author")],
-                [InlineKeyboardButton("Artist", callback_data="edit_user_template_artist"),
-                 InlineKeyboardButton("Video", callback_data="edit_user_template_video")],
-                [InlineKeyboardButton("Audio", callback_data="edit_user_template_audio"),
-                 InlineKeyboardButton("Subtitle", callback_data="edit_user_template_subtitle")],
-                [InlineKeyboardButton("🔙 Back", callback_data="user_main")]
-            ])
+            "📝 **Edit Metadata Templates**\n\n" "Select a field to edit:",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "Title", callback_data="edit_user_template_title"
+                        ),
+                        InlineKeyboardButton(
+                            "Author", callback_data="edit_user_template_author"
+                        ),
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "Artist", callback_data="edit_user_template_artist"
+                        ),
+                        InlineKeyboardButton(
+                            "Video", callback_data="edit_user_template_video"
+                        ),
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "Audio", callback_data="edit_user_template_audio"
+                        ),
+                        InlineKeyboardButton(
+                            "Subtitle", callback_data="edit_user_template_subtitle"
+                        ),
+                    ],
+                    [InlineKeyboardButton("🔙 Back", callback_data="user_main")],
+                ]
+            ),
         )
     elif data == "user_caption":
         templates = await db.get_all_templates(user_id)
@@ -246,21 +398,31 @@ async def user_settings_callback(client, callback_query):
             "- `{duration}` : Video duration\n"
             "- `{random}` : Random string (Anti-Hash)\n\n"
             "Click below to change it.",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("✏️ Change", callback_data="prompt_user_caption")],
-                [InlineKeyboardButton("🔙 Back", callback_data="user_main")]
-            ])
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "✏️ Change", callback_data="prompt_user_caption"
+                        )
+                    ],
+                    [InlineKeyboardButton("🔙 Back", callback_data="user_main")],
+                ]
+            ),
         )
     elif data == "prompt_user_caption":
         user_sessions[user_id] = "awaiting_user_template_caption"
         await callback_query.message.edit_text(
             "📝 **Send the new caption text:**\n\n(Use `{random}` to use the default random text generator)",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="user_main")]])
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("❌ Cancel", callback_data="user_main")]]
+            ),
         )
     elif data == "user_view":
         settings = await db.get_settings(user_id)
         templates = settings.get("templates", {}) if settings else {}
-        has_thumb = "✅ Yes" if settings and settings.get("thumbnail_binary") else "❌ No"
+        has_thumb = (
+            "✅ Yes" if settings and settings.get("thumbnail_binary") else "❌ No"
+        )
 
         text = f"👀 **Your Current Settings**\n\n"
         text += f"**Thumbnail Set:** {has_thumb}\n\n"
@@ -286,40 +448,94 @@ async def user_settings_callback(client, callback_query):
 
         await callback_query.message.edit_text(
             text,
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="user_main")]])
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("🔙 Back", callback_data="user_main")]]
+            ),
         )
     elif data == "user_filename_templates":
         await callback_query.message.edit_text(
-            "📝 **Edit Filename Templates**\n\n"
-            "Select media type to edit:",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Movies", callback_data="edit_user_fn_template_movies")],
-                [InlineKeyboardButton("Series", callback_data="edit_user_fn_template_series")],
-                [InlineKeyboardButton("Personal", callback_data="user_fn_templates_personal")],
-                [InlineKeyboardButton("Subtitles", callback_data="user_fn_templates_subtitles")],
-                [InlineKeyboardButton("🔙 Back", callback_data="user_main")]
-            ])
+            "📝 **Edit Filename Templates**\n\n" "Select media type to edit:",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "Movies", callback_data="edit_user_fn_template_movies"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "Series", callback_data="edit_user_fn_template_series"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "Personal", callback_data="user_fn_templates_personal"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "Subtitles", callback_data="user_fn_templates_subtitles"
+                        )
+                    ],
+                    [InlineKeyboardButton("🔙 Back", callback_data="user_main")],
+                ]
+            ),
         )
     elif data == "user_fn_templates_personal":
         await callback_query.message.edit_text(
-            "📝 **Edit Personal Filename Templates**\n\n"
-            "Select media type to edit:",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Personal Files", callback_data="edit_user_fn_template_personal_file")],
-                [InlineKeyboardButton("Personal Photos", callback_data="edit_user_fn_template_personal_photo")],
-                [InlineKeyboardButton("Personal Videos", callback_data="edit_user_fn_template_personal_video")],
-                [InlineKeyboardButton("🔙 Back", callback_data="user_filename_templates")]
-            ])
+            "📝 **Edit Personal Filename Templates**\n\n" "Select media type to edit:",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "Personal Files",
+                            callback_data="edit_user_fn_template_personal_file",
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "Personal Photos",
+                            callback_data="edit_user_fn_template_personal_photo",
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "Personal Videos",
+                            callback_data="edit_user_fn_template_personal_video",
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "🔙 Back", callback_data="user_filename_templates"
+                        )
+                    ],
+                ]
+            ),
         )
     elif data == "user_fn_templates_subtitles":
         await callback_query.message.edit_text(
-            "📝 **Edit Subtitles Filename Templates**\n\n"
-            "Select media type to edit:",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Movies", callback_data="edit_user_fn_template_subtitles_movies")],
-                [InlineKeyboardButton("Series", callback_data="edit_user_fn_template_subtitles_series")],
-                [InlineKeyboardButton("🔙 Back", callback_data="user_filename_templates")]
-            ])
+            "📝 **Edit Subtitles Filename Templates**\n\n" "Select media type to edit:",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "Movies",
+                            callback_data="edit_user_fn_template_subtitles_movies",
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "Series",
+                            callback_data="edit_user_fn_template_subtitles_series",
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "🔙 Back", callback_data="user_filename_templates"
+                        )
+                    ],
+                ]
+            ),
         )
     elif data.startswith("edit_user_fn_template_"):
         field = data.replace("edit_user_fn_template_", "")
@@ -330,17 +546,36 @@ async def user_settings_callback(client, callback_query):
             f"Current: `{current_val}`\n\n"
             f"Variables: `{{Title}}`, `{{Year}}`, `{{Quality}}`, `{{Season}}`, `{{Episode}}`, `{{Season_Episode}}`, `{{Language}}`, `{{Channel}}`\n"
             f"Note: File extension will be added automatically.",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("✏️ Change", callback_data=f"prompt_user_fn_template_{field}")],
-                [InlineKeyboardButton("🔙 Back", callback_data="user_filename_templates")]
-            ])
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "✏️ Change",
+                            callback_data=f"prompt_user_fn_template_{field}",
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "🔙 Back", callback_data="user_filename_templates"
+                        )
+                    ],
+                ]
+            ),
         )
     elif data.startswith("prompt_user_fn_template_"):
         field = data.replace("prompt_user_fn_template_", "")
         user_sessions[user_id] = f"awaiting_user_fn_template_{field}"
         await callback_query.message.edit_text(
             f"✏️ **Send the new filename template for {field.capitalize()}:**",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="user_filename_templates")]])
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "❌ Cancel", callback_data="user_filename_templates"
+                        )
+                    ]
+                ]
+            ),
         )
     elif data == "user_general_settings":
         current_channel = await db.get_channel(user_id)
@@ -348,16 +583,24 @@ async def user_settings_callback(client, callback_query):
             f"⚙️ **General Settings**\n\n"
             f"Current Channel Variable: `{current_channel}`\n\n"
             "Click below to change it.",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("✏️ Change", callback_data="prompt_user_channel")],
-                [InlineKeyboardButton("🔙 Back", callback_data="user_main")]
-            ])
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "✏️ Change", callback_data="prompt_user_channel"
+                        )
+                    ],
+                    [InlineKeyboardButton("🔙 Back", callback_data="user_main")],
+                ]
+            ),
         )
     elif data == "prompt_user_channel":
         user_sessions[user_id] = "awaiting_user_channel"
         await callback_query.message.edit_text(
             "⚙️ **Send the new Channel name variable to use in templates (e.g. `@MyChannel`):**",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="user_main")]])
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("❌ Cancel", callback_data="user_main")]]
+            ),
         )
     elif data == "user_main" or data == "user_cancel":
         user_sessions.pop(user_id, None)
@@ -365,15 +608,46 @@ async def user_settings_callback(client, callback_query):
             "🛠 **Personal Settings Panel** 🛠\n\n"
             "Welcome to your personal settings.\n"
             "Here you can customize templates and thumbnails for your own files.",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🖼 Manage Thumbnail", callback_data="user_thumb_menu")],
-                [InlineKeyboardButton("📝 Edit Metadata Templates", callback_data="user_templates")],
-                [InlineKeyboardButton("📝 Edit Filename Templates", callback_data="user_filename_templates")],
-                [InlineKeyboardButton("📝 Edit Caption Template", callback_data="user_caption")],
-                [InlineKeyboardButton("📺 Dumb Channels", callback_data="user_dumb_channels")],
-                [InlineKeyboardButton("⚙️ General Settings", callback_data="user_general_settings")],
-                [InlineKeyboardButton("👀 View Current Settings", callback_data="user_view")]
-            ])
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "🖼 Manage Thumbnail", callback_data="user_thumb_menu"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "📝 Edit Metadata Templates", callback_data="user_templates"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "📝 Edit Filename Templates",
+                            callback_data="user_filename_templates",
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "📝 Edit Caption Template", callback_data="user_caption"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "📺 Dumb Channels", callback_data="user_dumb_channels"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "⚙️ General Settings", callback_data="user_general_settings"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "👀 View Current Settings", callback_data="user_view"
+                        )
+                    ],
+                ]
+            ),
         )
     elif data.startswith("edit_user_template_"):
         field = data.split("_")[-1]
@@ -384,20 +658,30 @@ async def user_settings_callback(client, callback_query):
             f"Current: `{current_val}`\n\n"
             f"Variables: `{{title}}`, `{{season_episode}}`, `{{lang}}` (for audio/subtitle)\n\n"
             "Click below to change it.",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("✏️ Change", callback_data=f"prompt_user_template_{field}")],
-                [InlineKeyboardButton("🔙 Back", callback_data="user_templates")]
-            ])
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "✏️ Change", callback_data=f"prompt_user_template_{field}"
+                        )
+                    ],
+                    [InlineKeyboardButton("🔙 Back", callback_data="user_templates")],
+                ]
+            ),
         )
     elif data.startswith("prompt_user_template_"):
         field = data.replace("prompt_user_template_", "")
         user_sessions[user_id] = f"awaiting_user_template_{field}"
         await callback_query.message.edit_text(
             f"✏️ **Send the new template text for {field.capitalize()}:**",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="user_templates")]])
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("❌ Cancel", callback_data="user_templates")]]
+            ),
         )
 
+
 from pyrogram import ContinuePropagation
+
 
 @Client.on_message(filters.photo & filters.private, group=1)
 async def handle_user_photo(client, message):
@@ -406,24 +690,39 @@ async def handle_user_photo(client, message):
 
     user_id = message.from_user.id
     if user_sessions.get(user_id) != "awaiting_user_thumb":
-        # Pass to admin photo handler if applicable or to upload process
         raise ContinuePropagation
 
     msg = await message.reply_text("Processing thumbnail...")
     try:
         file_id = message.photo.file_id
-        path = await client.download_media(message, file_name=f"downloads/{user_id}_thumb.jpg")
+        path = await client.download_media(
+            message, file_name=f"downloads/{user_id}_thumb.jpg"
+        )
         with open(path, "rb") as f:
             binary_data = f.read()
         await db.update_thumbnail(file_id, binary_data, user_id)
-        await msg.edit_text("✅ Personal thumbnail updated successfully!",
-                            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Menu", callback_data="user_thumb_menu")]]))
+        await msg.edit_text(
+            "✅ Personal thumbnail updated successfully!",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "🔙 Back to Menu", callback_data="user_thumb_menu"
+                        )
+                    ]
+                ]
+            ),
+        )
         user_sessions.pop(user_id, None)
     except Exception as e:
         logger.error(f"Thumbnail upload failed: {e}")
         await msg.edit_text(f"❌ Error: {e}")
 
-@Client.on_message((filters.text | filters.forwarded) & filters.private & ~filters.regex(r"^/"), group=1)
+
+@Client.on_message(
+    (filters.text | filters.forwarded) & filters.private & ~filters.regex(r"^/"),
+    group=1,
+)
 async def handle_user_text(client, message):
     if not is_public_mode():
         raise ContinuePropagation
@@ -437,7 +736,18 @@ async def handle_user_text(client, message):
         val = message.text.strip() if message.text else ""
         if val.lower() == "disable":
             user_sessions.pop(user_id, None)
-            await message.reply_text("Cancelled.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Menu", callback_data="dumb_user_menu")]]))
+            await message.reply_text(
+                "Cancelled.",
+                reply_markup=InlineKeyboardMarkup(
+                    [
+                        [
+                            InlineKeyboardButton(
+                                "🔙 Back to Menu", callback_data="dumb_user_menu"
+                            )
+                        ]
+                    ]
+                ),
+            )
             return
 
         ch_id = None
@@ -451,19 +761,42 @@ async def handle_user_text(client, message):
                 ch_id = chat.id
                 ch_name = chat.title or "Channel"
             except Exception as e:
-                await message.reply_text(f"❌ Error finding channel: {e}\nTry forwarding a message instead.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data="dumb_user_menu")]]))
+                await message.reply_text(
+                    f"❌ Error finding channel: {e}\nTry forwarding a message instead.",
+                    reply_markup=InlineKeyboardMarkup(
+                        [
+                            [
+                                InlineKeyboardButton(
+                                    "❌ Cancel", callback_data="dumb_user_menu"
+                                )
+                            ]
+                        ]
+                    ),
+                )
                 return
 
         if ch_id:
             invite_link = None
             try:
-                # Try to export an invite link so the bot can cache this peer on restart
                 invite_link = await client.export_chat_invite_link(ch_id)
             except Exception as e:
                 logger.warning(f"Could not export invite link for {ch_id}: {e}")
 
-            await db.add_dumb_channel(ch_id, ch_name, invite_link=invite_link, user_id=user_id)
-            await message.reply_text(f"✅ Added Dumb Channel: **{ch_name}** (`{ch_id}`)", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Menu", callback_data="dumb_user_menu")]]))
+            await db.add_dumb_channel(
+                ch_id, ch_name, invite_link=invite_link, user_id=user_id
+            )
+            await message.reply_text(
+                f"✅ Added Dumb Channel: **{ch_name}** (`{ch_id}`)",
+                reply_markup=InlineKeyboardMarkup(
+                    [
+                        [
+                            InlineKeyboardButton(
+                                "🔙 Back to Menu", callback_data="dumb_user_menu"
+                            )
+                        ]
+                    ]
+                ),
+            )
             user_sessions.pop(user_id, None)
         return
 
@@ -473,12 +806,24 @@ async def handle_user_text(client, message):
         await db.update_template(field, new_template, user_id)
 
         if field == "caption":
-            reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Menu", callback_data="user_main")]])
+            reply_markup = InlineKeyboardMarkup(
+                [[InlineKeyboardButton("🔙 Back to Menu", callback_data="user_main")]]
+            )
         else:
-            reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Templates", callback_data="user_templates")]])
+            reply_markup = InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "🔙 Back to Templates", callback_data="user_templates"
+                        )
+                    ]
+                ]
+            )
 
-        await message.reply_text(f"✅ Your template for **{field.capitalize()}** updated to:\n`{new_template}`",
-                                 reply_markup=reply_markup)
+        await message.reply_text(
+            f"✅ Your template for **{field.capitalize()}** updated to:\n`{new_template}`",
+            reply_markup=reply_markup,
+        )
         user_sessions.pop(user_id, None)
 
     elif state.startswith("awaiting_user_fn_template_"):
@@ -486,16 +831,41 @@ async def handle_user_text(client, message):
         new_template = message.text
         await db.update_filename_template(field, new_template, user_id)
 
-        reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Filename Templates", callback_data="user_filename_templates")]])
-        await message.reply_text(f"✅ Your filename template for **{field.capitalize()}** updated to:\n`{new_template}`",
-                                 reply_markup=reply_markup)
+        reply_markup = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "🔙 Back to Filename Templates",
+                        callback_data="user_filename_templates",
+                    )
+                ]
+            ]
+        )
+        await message.reply_text(
+            f"✅ Your filename template for **{field.capitalize()}** updated to:\n`{new_template}`",
+            reply_markup=reply_markup,
+        )
         user_sessions.pop(user_id, None)
 
     elif state == "awaiting_user_channel":
         new_channel = message.text
         await db.update_channel(new_channel, user_id)
 
-        reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Menu", callback_data="user_main")]])
-        await message.reply_text(f"✅ Your channel variable updated to:\n`{new_channel}`",
-                                 reply_markup=reply_markup)
+        reply_markup = InlineKeyboardMarkup(
+            [[InlineKeyboardButton("🔙 Back to Menu", callback_data="user_main")]]
+        )
+        await message.reply_text(
+            f"✅ Your channel variable updated to:\n`{new_channel}`",
+            reply_markup=reply_markup,
+        )
         user_sessions.pop(user_id, None)
+
+
+# --------------------------------------------------------------------------
+# Developed by 𝕏0L0™ (@davdxpx) | © 2026 XTV Network Global
+# Don't Remove Credit
+# Telegram Channel @XTVbots
+# Developed for the 𝕏TV Network @XTVglobal
+# Backup Channel @XTVhome
+# Contact on Telegram @davdxpx
+# --------------------------------------------------------------------------

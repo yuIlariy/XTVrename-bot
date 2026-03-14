@@ -1,7 +1,7 @@
 import logging
 import sys
 
-# ANSI Colors for Railway
+
 class Colors:
     RESET = "\033[0m"
     RED = "\033[31m"
@@ -11,31 +11,30 @@ class Colors:
     BOLD = "\033[1m"
     CYAN = "\033[36m"
 
+
 class ConsoleFormatter(logging.Formatter):
     """Formatierung für Railway Console mit Farben und Emojis"""
 
     FORMATS = {
-        logging.DEBUG:    "🐞",
-        logging.INFO:     "ℹ️ ",
-        logging.WARNING:  "⚠️ ",
-        logging.ERROR:    "❌ ",
-        logging.CRITICAL: "🔥 "
+        logging.DEBUG: "🐞",
+        logging.INFO: "ℹ️ ",
+        logging.WARNING: "⚠️ ",
+        logging.ERROR: "❌ ",
+        logging.CRITICAL: "🔥 ",
     }
 
     COLOR_MAP = {
-        logging.DEBUG:    Colors.CYAN,
-        logging.INFO:     Colors.GREEN,
-        logging.WARNING:  Colors.YELLOW,
-        logging.ERROR:    Colors.RED + Colors.BOLD,
-        logging.CRITICAL: Colors.RED + Colors.BOLD
+        logging.DEBUG: Colors.CYAN,
+        logging.INFO: Colors.GREEN,
+        logging.WARNING: Colors.YELLOW,
+        logging.ERROR: Colors.RED + Colors.BOLD,
+        logging.CRITICAL: Colors.RED + Colors.BOLD,
     }
 
     def format(self, record):
         emoji = self.FORMATS.get(record.levelno, "")
         color = self.COLOR_MAP.get(record.levelno, Colors.RESET)
 
-        # Format: [TIME] [EMOJI] LEVEL :: MESSAGE
-        # Note: Railway timestamps are separate, but user wants this format.
         log_fmt = (
             f"{Colors.BLUE}[%(asctime)s]{Colors.RESET} "
             f"{color}{emoji}%(levelname)-8s{Colors.RESET} :: "
@@ -45,19 +44,28 @@ class ConsoleFormatter(logging.Formatter):
         formatter = logging.Formatter(log_fmt, datefmt="%H:%M:%S")
         return formatter.format(record)
 
+
 def get_logger(name):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
-    # Console Handler
     if not logger.handlers:
         ch = logging.StreamHandler(sys.stdout)
         ch.setFormatter(ConsoleFormatter())
         logger.addHandler(ch)
 
-    # Suppress verbose loggers
     logging.getLogger("pyrogram").setLevel(logging.ERROR)
     logging.getLogger("pyrogram.session.session").setLevel(logging.ERROR)
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
     return logger
+
+
+# --------------------------------------------------------------------------
+# Developed by 𝕏0L0™ (@davdxpx) | © 2026 XTV Network Global
+# Don't Remove Credit
+# Telegram Channel @XTVbots
+# Developed for the 𝕏TV Network @XTVglobal
+# Backup Channel @XTVhome
+# Contact on Telegram @davdxpx
+# --------------------------------------------------------------------------

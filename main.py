@@ -21,11 +21,8 @@ from pyrogram import Client, idle
 from config import Config
 from utils.log import get_logger
 
-# Configure logging
 logger = get_logger("main")
 
-# Initialize Bot
-# High performance settings: workers=50, max_concurrent_transmissions=10
 app = Client(
     "xtv_rename_bot",
     api_id=Config.API_ID,
@@ -33,10 +30,9 @@ app = Client(
     bot_token=Config.BOT_TOKEN,
     workers=50,
     max_concurrent_transmissions=10,
-    plugins=dict(root="plugins")
+    plugins=dict(root="plugins"),
 )
 
-# Initialize Userbot (for >2GB support)
 user_bot = None
 
 if __name__ == "__main__":
@@ -47,21 +43,15 @@ if __name__ == "__main__":
     logger.info("Starting XTV Rename Bot...")
     app.start()
 
-    # Cache Dumb Channel peers using stored invite links to prevent PEER_ID_INVALID on ephemeral hosts
     try:
         from database import db
+
         async def cache_channels():
-            # Dumb Channels
             links = await db.get_all_dumb_channel_links()
             for link in links:
                 try:
-                    # Using get_chat with an invite link caches the peer in the session
-                    # Note: Telegram Bots cannot use CheckChatInvite for private channels.
-                    # If links are public (@username), it works. If private (+hash), it raises BOT_METHOD_INVALID.
-                    # We will catch this, but it's safe to ignore since the bot might already know it.
                     await app.get_chat(link)
                 except Exception as e:
-                    # Log as debug so we don't spam warnings on valid setups where the bot just can't use the link
                     pass
 
         logger.info("Caching Channel peers...")
@@ -69,22 +59,25 @@ if __name__ == "__main__":
     except Exception as e:
         logger.warning(f"Error during Channel caching: {e}")
 
-    # Fetch Userbot session from Database
     try:
         from database import db
+
         async def get_userbot_session():
             return await db.get_pro_session()
+
         pro_data = app.loop.run_until_complete(get_userbot_session())
 
         if pro_data and pro_data.get("session_string"):
-            logger.info("𝕏TV Pro™ Session detected in database. Initializing Premium Userbot...")
+            logger.info(
+                "𝕏TV Pro™ Session detected in database. Initializing Premium Userbot..."
+            )
             user_bot = Client(
                 "xtv_user_bot",
                 api_id=pro_data.get("api_id", Config.API_ID),
                 api_hash=pro_data.get("api_hash", Config.API_HASH),
                 session_string=pro_data.get("session_string"),
                 workers=50,
-                max_concurrent_transmissions=10
+                max_concurrent_transmissions=10,
             )
             app.user_bot = user_bot
 
@@ -94,7 +87,9 @@ if __name__ == "__main__":
 
         else:
             app.user_bot = None
-            logger.warning("No 𝕏TV Pro™ Session found in database. 4GB upload support is DISABLED.")
+            logger.warning(
+                "No 𝕏TV Pro™ Session found in database. 4GB upload support is DISABLED."
+            )
     except Exception as e:
         logger.error(f"Failed to initialize Userbot from DB: {e}")
         app.user_bot = None
@@ -109,3 +104,12 @@ if __name__ == "__main__":
             pass
 
     app.stop()
+
+# --------------------------------------------------------------------------
+# Developed by 𝕏0L0™ (@davdxpx) | © 2026 XTV Network Global
+# Don't Remove Credit
+# Telegram Channel @XTVbots
+# Developed for the 𝕏TV Network @XTVglobal
+# Backup Channel @XTVhome
+# Contact on Telegram @davdxpx
+# --------------------------------------------------------------------------
