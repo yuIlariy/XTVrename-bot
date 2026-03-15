@@ -115,7 +115,7 @@ The XTV Rename Bot can operate in two distinct modes via the `PUBLIC_MODE` envir
 * **User-Specific Settings**: Every user gets their own profile. Users can use the `/settings` command to set their own custom thumbnails, filename templates, and metadata templates without affecting others.
 * **CEO Controls**: The `/admin` command transforms into a global configuration panel for the CEO. The CEO can set:
   * **Force-Sub Channel**: Require users to join a specific channel before using the bot.
-  * **Rate Limits**: Set a delay (in seconds) between file uploads to prevent spam.
+  * **Daily Quotas**: Configure maximum daily egress (MB) and daily file limits per user to prevent abuse.\n  * **Usage Dashboard**: Track live bot activity, monitor top users, block/unblock accounts, and view the last 7 days of global egress usage.
   * **Bot Branding**: Customize the bot name and community name displayed to users.
   * **Support Contact**: Define a contact link for the `/info` command.
 * **Commands for BotFather**:
