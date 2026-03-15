@@ -227,7 +227,7 @@ debug("✅ Loaded handler: admin_callback")
 async def admin_callback(client, callback_query):
     from utils.state import get_state
 
-    if get_state(callback_query.from_user.id):
+    if not get_state(callback_query.from_user.id):
         if callback_query.data not in [
             "cancel",
             "admin_main",
@@ -237,7 +237,7 @@ async def admin_callback(client, callback_query):
             "admin_broadcast"
         ] and not callback_query.data.startswith("cancel"):
             await callback_query.answer(
-                "⚠️ Session expired. Please start again.", show_alert=True
+                "⚠️ Session expired. Please start again or use /end to clear the current session.", show_alert=True
             )
             return
     await callback_query.answer()
@@ -1611,6 +1611,20 @@ debug("✅ Loaded handler: admin_dashboard_overview_cb")
     filters.regex("^admin_usage_dashboard$") & filters.user(Config.CEO_ID)
 )
 async def admin_dashboard_overview_cb(client: Client, callback_query: CallbackQuery):
+    from utils.state import get_state
+
+    if not get_state(callback_query.from_user.id):
+        if callback_query.data not in [
+            "cancel",
+            "admin_main",
+            "user_main",
+            "settings_main",
+            "dumb_menu",
+        ] and not callback_query.data.startswith("cancel"):
+            await callback_query.answer(
+                "⚠️ Session expired. Please start again or use /end to clear the current session.", show_alert=True
+            )
+            return
     await callback_query.answer()
     stats = await db.get_dashboard_stats()
 
@@ -1706,6 +1720,20 @@ debug("✅ Loaded handler: admin_dashboard_top_cb")
     filters.regex(r"^admin_dashboard_top_(\d+)$") & filters.user(Config.CEO_ID)
 )
 async def admin_dashboard_top_cb(client: Client, callback_query: CallbackQuery):
+    from utils.state import get_state
+
+    if not get_state(callback_query.from_user.id):
+        if callback_query.data not in [
+            "cancel",
+            "admin_main",
+            "user_main",
+            "settings_main",
+            "dumb_menu",
+        ] and not callback_query.data.startswith("cancel"):
+            await callback_query.answer(
+                "⚠️ Session expired. Please start again or use /end to clear the current session.", show_alert=True
+            )
+            return
     await callback_query.answer()
     page = int(callback_query.matches[0].group(1))
     limit = 10
@@ -1797,6 +1825,20 @@ debug("✅ Loaded handler: admin_dashboard_daily_cb")
     filters.regex("^admin_dashboard_daily$") & filters.user(Config.CEO_ID)
 )
 async def admin_dashboard_daily_cb(client: Client, callback_query: CallbackQuery):
+    from utils.state import get_state
+
+    if not get_state(callback_query.from_user.id):
+        if callback_query.data not in [
+            "cancel",
+            "admin_main",
+            "user_main",
+            "settings_main",
+            "dumb_menu",
+        ] and not callback_query.data.startswith("cancel"):
+            await callback_query.answer(
+                "⚠️ Session expired. Please start again or use /end to clear the current session.", show_alert=True
+            )
+            return
     await callback_query.answer()
     daily_stats = await db.get_daily_stats(limit=7)
 
@@ -1984,6 +2026,20 @@ debug("✅ Loaded handler: admin_block_user_cb")
     filters.regex(r"^admin_block_(\d+)$") & filters.user(Config.CEO_ID)
 )
 async def admin_block_user_cb(client: Client, callback_query: CallbackQuery):
+    from utils.state import get_state
+
+    if not get_state(callback_query.from_user.id):
+        if callback_query.data not in [
+            "cancel",
+            "admin_main",
+            "user_main",
+            "settings_main",
+            "dumb_menu",
+        ] and not callback_query.data.startswith("cancel"):
+            await callback_query.answer(
+                "⚠️ Session expired. Please start again or use /end to clear the current session.", show_alert=True
+            )
+            return
     await callback_query.answer("User Blocked", show_alert=True)
     user_id = int(callback_query.matches[0].group(1))
     await db.block_user(user_id)
@@ -1998,6 +2054,20 @@ debug("✅ Loaded handler: admin_unblock_user_cb")
     filters.regex(r"^admin_unblock_(\d+)$") & filters.user(Config.CEO_ID)
 )
 async def admin_unblock_user_cb(client: Client, callback_query: CallbackQuery):
+    from utils.state import get_state
+
+    if not get_state(callback_query.from_user.id):
+        if callback_query.data not in [
+            "cancel",
+            "admin_main",
+            "user_main",
+            "settings_main",
+            "dumb_menu",
+        ] and not callback_query.data.startswith("cancel"):
+            await callback_query.answer(
+                "⚠️ Session expired. Please start again or use /end to clear the current session.", show_alert=True
+            )
+            return
     await callback_query.answer("User Unblocked", show_alert=True)
     user_id = int(callback_query.matches[0].group(1))
     await db.unblock_user(user_id)
@@ -2012,6 +2082,20 @@ debug("✅ Loaded handler: admin_reset_quota_cb")
     filters.regex(r"^admin_reset_quota_(\d+)$") & filters.user(Config.CEO_ID)
 )
 async def admin_reset_quota_cb(client: Client, callback_query: CallbackQuery):
+    from utils.state import get_state
+
+    if not get_state(callback_query.from_user.id):
+        if callback_query.data not in [
+            "cancel",
+            "admin_main",
+            "user_main",
+            "settings_main",
+            "dumb_menu",
+        ] and not callback_query.data.startswith("cancel"):
+            await callback_query.answer(
+                "⚠️ Session expired. Please start again or use /end to clear the current session.", show_alert=True
+            )
+            return
     await callback_query.answer("Quota Reset", show_alert=True)
     user_id = int(callback_query.matches[0].group(1))
     await db.reset_user_quota(user_id)
@@ -2026,6 +2110,20 @@ debug("✅ Loaded handler: admin_prompt_lookup_cb")
     filters.regex("^prompt_user_lookup$") & filters.user(Config.CEO_ID)
 )
 async def admin_prompt_lookup_cb(client: Client, callback_query: CallbackQuery):
+    from utils.state import get_state
+
+    if not get_state(callback_query.from_user.id):
+        if callback_query.data not in [
+            "cancel",
+            "admin_main",
+            "user_main",
+            "settings_main",
+            "dumb_menu",
+        ] and not callback_query.data.startswith("cancel"):
+            await callback_query.answer(
+                "⚠️ Session expired. Please start again or use /end to clear the current session.", show_alert=True
+            )
+            return
     await callback_query.answer()
     try:
         await callback_query.message.edit_text(
