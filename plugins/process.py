@@ -798,6 +798,46 @@ class TaskProcessor:
                         f"❌ **Delivery Error**\n\nThe file was processed successfully but the bot failed to deliver it to you from the tunnel. Error: `{e}`",
                     )
 
+            # --- USAGE TRACKING INJECTION ---
+            usage_text = ""
+            if Config.PUBLIC_MODE:
+                try:
+                    # Update usage stats using the actual output size
+                    processed_size = os.path.getsize(self.output_path)
+                    await db.update_usage(self.user_id, processed_size)
+
+                    # Add usage to success message
+                    usage = await db.get_user_usage(self.user_id)
+                    config = await db.get_public_config()
+
+                    daily_egress_mb_limit = config.get("daily_egress_mb", 0)
+                    daily_file_count_limit = config.get("daily_file_count", 0)
+
+                    user_files = usage.get("file_count", 0)
+                    user_egress_mb = usage.get("egress_mb", 0.0)
+
+                    if daily_egress_mb_limit <= 0 and daily_file_count_limit <= 0:
+                        usage_text = f"Today: {user_files} files · {user_egress_mb:.2f} MB — No limits set"
+                    else:
+                        limit_str = f"{daily_egress_mb_limit} MB"
+                        if daily_egress_mb_limit >= 1024:
+                            limit_str = f"{daily_egress_mb_limit / 1024:.2f} GB"
+
+                        used_str = f"{user_egress_mb:.2f} MB"
+                        if user_egress_mb >= 1024:
+                            used_str = f"{user_egress_mb / 1024:.2f} GB"
+
+                        usage_text = f"Today: {user_files} files · {used_str} used of {limit_str}"
+
+                    # Send standalone confirmation msg since status_msg is deleted
+                    await self.client.send_message(
+                        self.user_id,
+                        f"✅ **Done!** — {usage_text}"
+                    )
+                except Exception as usage_e:
+                    logger.error(f"Error fetching/updating usage for success message: {usage_e}")
+            # --- END USAGE TRACKING INJECTION ---
+
             await self.status_msg.delete()
 
             batch_id = self.data.get("batch_id")
