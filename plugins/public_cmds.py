@@ -870,8 +870,10 @@ async def handle_user_text(client, message):
 # Contact on Telegram @davdxpx
 # --------------------------------------------------------------------------
 
-@Client.on_message(filters.command("usage") & filters.private & filters.create(is_public_mode), group=0)
+@Client.on_message(filters.command("usage") & filters.private, group=0)
 async def usage_command(client, message):
+    if not is_public_mode():
+        return
     user_id = message.from_user.id
 
     # Bypass limits for CEO/Admins visually

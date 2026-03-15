@@ -985,11 +985,11 @@ async def handle_admin_text(client, message):
             except Exception:
                 await message.reply_text("❌ Could not find a user with that ID or username. Please make sure the ID is correct.",
                                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Dashboard", callback_data="admin_usage_dashboard")]]))
-                await clear_session(message.from_user.id)
+                clear_session(message.from_user.id)
                 return
 
         await show_user_lookup(client, message, user_id)
-        await clear_session(message.from_user.id)
+        clear_session(message.from_user.id)
         return
 
     if state == "awaiting_dumb_timeout":
@@ -1555,13 +1555,13 @@ async def admin_prompt_lookup_cb(client: Client, callback_query: CallbackQuery):
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Dashboard", callback_data="admin_usage_dashboard")]])
     )
     from utils.state import set_state
-    await set_state(callback_query.from_user.id, "awaiting_user_lookup")
+    set_state(callback_query.from_user.id, "awaiting_user_lookup")
 
 
 @Client.on_message(filters.text & filters.private & filters.user(Config.CEO_ID), group=2)
 async def admin_handle_user_lookup_text(client: Client, message: Message):
     from utils.state import get_state, clear_session
-    state = await get_state(message.from_user.id)
+    state = get_state(message.from_user.id)
 
     if state == "awaiting_user_lookup":
         val = message.text.strip()
@@ -1577,9 +1577,9 @@ async def admin_handle_user_lookup_text(client: Client, message: Message):
             except Exception:
                 await message.reply_text("❌ Could not find a user with that ID or username. Please make sure the ID is correct.",
                                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back to Dashboard", callback_data="admin_usage_dashboard")]]))
-                await clear_session(message.from_user.id)
+                clear_session(message.from_user.id)
                 return
 
         await show_user_lookup(client, message, user_id)
-        await clear_session(message.from_user.id)
+        clear_session(message.from_user.id)
         raise ContinuePropagation
