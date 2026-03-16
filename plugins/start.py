@@ -21,7 +21,7 @@ async def handle_start_command_unique(client, message):
         if not (user_id == Config.CEO_ID or user_id in Config.ADMIN_IDS):
             logger.warning(f"Unauthorized access by {user_id}")
             return
-        bot_name = "**XTV Rename Bot**"
+        bot_name = "**𝕏TV Rename Bot**"
         community_name = "official XTV"
     else:
         if not await check_force_sub(client, user_id):
@@ -33,7 +33,7 @@ async def handle_start_command_unique(client, message):
 
             await message.reply_text(
                 f"👋 **Welcome to {community_name}!**\n\n"
-                f"To use the **{config.get('bot_name', 'XTV Rename Bot')}** and all its features, you need to become a member of our community channel first.\n\n"
+                f"To use the **{config.get('bot_name', '𝕏TV Rename Bot')}** and all its features, you need to become a member of our community channel first.\n\n"
                 "**How to get started:**\n"
                 "1️⃣ Click the button below to join the channel.\n"
                 "2️⃣ Come back to this bot.\n"
@@ -52,7 +52,7 @@ async def handle_start_command_unique(client, message):
             return
 
         config = await db.get_public_config()
-        bot_name = f"**{config.get('bot_name', 'XTV Rename Bot')}**"
+        bot_name = f"**{config.get('bot_name', '𝕏TV Rename Bot')}**"
         community_name = config.get("community_name", "Our Community")
 
     # Check if user is completely new (no usage track yet)
