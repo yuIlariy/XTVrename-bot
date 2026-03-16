@@ -28,20 +28,6 @@ def get_pro_session_data(user_id):
 
 @Client.on_callback_query(filters.regex(r"^pro_setup_menu$"))
 async def pro_menu(client, callback_query):
-    from utils.state import get_state
-
-    if get_state(callback_query.from_user.id):
-        if callback_query.data not in [
-            "cancel",
-            "admin_main",
-            "user_main",
-            "settings_main",
-            "dumb_menu",
-        ] and not callback_query.data.startswith("cancel"):
-            await callback_query.answer(
-                "⚠️ Session expired. Please start again.", show_alert=True
-            )
-            return
     user_id = callback_query.from_user.id
     if user_id != Config.CEO_ID:
         return await callback_query.answer("Not authorized.", show_alert=True)
@@ -84,20 +70,6 @@ async def pro_menu(client, callback_query):
 
 @Client.on_callback_query(filters.regex(r"^pro_setup_delete$"))
 async def delete_setup(client, callback_query):
-    from utils.state import get_state
-
-    if get_state(callback_query.from_user.id):
-        if callback_query.data not in [
-            "cancel",
-            "admin_main",
-            "user_main",
-            "settings_main",
-            "dumb_menu",
-        ] and not callback_query.data.startswith("cancel"):
-            await callback_query.answer(
-                "⚠️ Session expired. Please start again.", show_alert=True
-            )
-            return
     await callback_query.answer()
     user_id = callback_query.from_user.id
     if user_id != Config.CEO_ID:
@@ -123,20 +95,6 @@ async def delete_setup(client, callback_query):
 
 @Client.on_callback_query(filters.regex(r"^pro_setup_start$"))
 async def start_setup(client, callback_query):
-    from utils.state import get_state
-
-    if get_state(callback_query.from_user.id):
-        if callback_query.data not in [
-            "cancel",
-            "admin_main",
-            "user_main",
-            "settings_main",
-            "dumb_menu",
-        ] and not callback_query.data.startswith("cancel"):
-            await callback_query.answer(
-                "⚠️ Session expired. Please start again.", show_alert=True
-            )
-            return
     await callback_query.answer()
     user_id = callback_query.from_user.id
     if user_id != Config.CEO_ID:
